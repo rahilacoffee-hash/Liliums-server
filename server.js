@@ -11,11 +11,12 @@ import cartRouter from "./route/Cart.route.js";
 import paymentRouter from "./route/Payment.route.js";
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
 
-// --------------------
-// CORS
-// --------------------
+// =========================
+// Middleware
+// =========================
+
 app.use(
   cors({
     origin: [
@@ -26,62 +27,92 @@ app.use(
   })
 );
 
-// --------------------
-// Cookies
-// --------------------
 app.use(cookieParser());
 
-// --------------------
-// Paystack Webhook
-// Must come BEFORE express.json()
-// --------------------
+// Paystack webhook MUST come before express.json()
 app.use(
   "/api/payment/webhook",
   express.raw({ type: "application/json" })
 );
 
-// --------------------
-// JSON Parser
-// --------------------
 app.use(express.json());
 
-// --------------------
+// =========================
 // Routes
-// --------------------
+// =========================
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Liliums API is running 🚀",
+  });
+});
+
 app.use("/api/user", userRouter);
 app.use("/api/products", productRouter);
 app.use("/api/order", orderRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/payment", paymentRouter);
 
-// --------------------
-// Health Check
-// --------------------
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "API is running",
+// =========================
+// 404
+// =========================
+
+app.use("*", (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
   });
 });
 
-// --------------------
-// MongoDB
-// --------------------
-async function connectDB() {
+// =========================
+// Error Handler
+// =========================
+
+app.use((err, req, res, next) => {
+  console.error(err);
+
+  res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+  });
+});
+
+// =========================
+// MongoDB + Server
+// =========================
+
+async function startServer() {
   try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error("MONGODB_URI is missing.");
+    }
+
     await mongoose.connect(process.env.MONGODB_URI);
+
     console.log("✅ MongoDB Connected");
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+
   } catch (error) {
-    console.log(error);
+    console.error("❌ Failed to start server");
+    console.error(error);
     process.exit(1);
   }
 }
 
-connectDB();
+startServer();
 
-// --------------------
-// Start Server
-// --------------------
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// =========================
+// Handle unexpected errors
+// =========================
+
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Rejection:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
 });
