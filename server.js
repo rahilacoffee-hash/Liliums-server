@@ -18,7 +18,10 @@ const PORT = process.env.PORT || 8080;
 // --------------------
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://liliums-glee.vercel.app",
+    ],
     credentials: true,
   })
 );
