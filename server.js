@@ -55,10 +55,10 @@ app.use("/api/cart", cartRouter);
 app.use("/api/payment", paymentRouter);
 
 // =========================
-// 404
+// 404 (no path — avoids Express 5 / path-to-regexp "*" bug)
 // =========================
 
-app.use("*", (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: "Route not found",
